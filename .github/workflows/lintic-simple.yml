@@ -1,0 +1,20 @@
+name: Lintic
+
+on:
+  pull_request:
+    paths:
+      - '**/*.rb'
+
+jobs:
+  lint-fix:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fix linting errors with Lintic
+        uses: shindi-renuo/lintic@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ollama-model: qwen2.5-coder:1.5b
