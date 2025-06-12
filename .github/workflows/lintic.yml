@@ -32,7 +32,7 @@ jobs:
 
       - name: Download Lintic
         run: |
-          curl -o lintic.rb https://raw.githubusercontent.com/your-org/lintic/main/main.rb
+          curl -o lintic.rb https://raw.githubusercontent.com/shindi-renuo/lintic/main/main.rb
 
       - name: Check if Ollama model is available
         id: check_ollama

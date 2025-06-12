@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Fix linting errors with Lintic
-        uses: your-org/lintic@main
+        uses: shindi-renuo/lintic@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ollama-model: qwen2.5-coder:1.5b
@@ -82,7 +82,7 @@ jobs:
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           OLLAMA_MODEL: qwen2.5-coder:1.5b
         run: |
-          curl -o lintic.rb https://raw.githubusercontent.com/your-org/lintic/main/main.rb
+          curl -o lintic.rb https://raw.githubusercontent.com/shindi-renuo/lintic/main/main.rb
           ruby lintic.rb
 ```
 
@@ -142,7 +142,7 @@ The `GITHUB_TOKEN` is automatically provided by GitHub Actions and has limited p
 
 ```yaml
 - name: Fix linting errors with Lintic
-  uses: your-org/lintic@main
+  uses: shindi-renuo/lintic@main
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     ollama-model: codellama:7b
@@ -153,7 +153,7 @@ The `GITHUB_TOKEN` is automatically provided by GitHub Actions and has limited p
 
 ```yaml
 - name: Fix linting errors with Lintic
-  uses: your-org/lintic@main
+  uses: shindi-renuo/lintic@main
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     ruby-version: 3.2
@@ -163,7 +163,7 @@ The `GITHUB_TOKEN` is automatically provided by GitHub Actions and has limited p
 
 ```yaml
 - name: Fix linting errors with Lintic
-  uses: your-org/lintic@main
+  uses: shindi-renuo/lintic@main
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     skip-install: true
@@ -217,7 +217,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Fix linting errors
-        uses: your-org/lintic@main
+        uses: shindi-renuo/lintic@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 ```

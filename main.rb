@@ -351,7 +351,7 @@ class Lintic
       3. Your original PR will then have clean, linted code
 
       ---
-      *Generated automatically by [Lintic](https://github.com/your-org/lintic) 🚀*
+      *Generated automatically by [Lintic](https://github.com/shindi-renuo/lintic) 🚀*
     BODY
   end
 end

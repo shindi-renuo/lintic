@@ -90,7 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Fix linting errors with Lintic
-        uses: your-org/lintic@main
+        uses: shindi-renuo/lintic@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ollama-model: qwen2.5-coder:1.5b
