@@ -11,6 +11,10 @@ inputs:
     description: 'Ollama model to use for AI fixes'
     required: false
     default: 'qwen2.5-coder:1.5b'
+  ollama-uri:
+    description: 'Ollama server URI'
+    required: false
+    default: 'http://localhost:11434/v1/'
   ruby-version:
     description: 'Ruby version to use'
     required: false
@@ -75,7 +79,7 @@ runs:
         GITHUB_REPO: ${{ github.repository }}
         GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
         OLLAMA_MODEL: ${{ inputs.ollama-model }}
-        OLLAMA_URI: http://localhost:11434/v1/
+        OLLAMA_URI: ${{ inputs.ollama-uri }}
       run: |
         # Copy the Lintic script to current directory
         cp ${{ github.action_path }}/main.rb ./lintic.rb

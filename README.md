@@ -94,6 +94,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ollama-model: qwen2.5-coder:1.5b
+          ollama-uri: http://localhost:11434/v1/
 ```
 
 For detailed setup instructions, configuration options, and troubleshooting, see [CI_SETUP.md](CI_SETUP.md).

@@ -18,3 +18,4 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ollama-model: qwen2.5-coder:1.5b
+          ollama-uri: "http://localhost:11434/v1/"

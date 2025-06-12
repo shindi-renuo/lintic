@@ -146,6 +146,7 @@ The `GITHUB_TOKEN` is automatically provided by GitHub Actions and has limited p
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     ollama-model: codellama:7b
+    ollama-uri: http;//localhost:11434/v1
 ```
 
 ### Specific Ruby Version
