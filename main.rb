@@ -64,8 +64,8 @@ class Lintic
   end
 
   def setup_github_client
-    token = ENV['GITHUB_TOKEN']
-    raise LinticError, 'GITHUB_TOKEN environment variable is required' unless token
+    token = ENV['LINTIC_GITHUB_TOKEN']
+    raise LinticError, 'LINTIC_GITHUB_TOKEN environment variable is required' unless token
 
     Octokit::Client.new(access_token: token).tap do |client|
       # Test the connection
@@ -77,10 +77,10 @@ class Lintic
   end
 
   def setup_ai_client
-    model = ENV.fetch('OLLAMA_MODEL', 'codellama')
+    model = ENV.fetch('LINTIC_OLLAMA_MODEL', 'codellama')
 
     OpenAI::Client.new(
-      uri_base: ENV.fetch('OLLAMA_URI', 'http://localhost:11434/v1/'),
+      uri_base: ENV.fetch('LINTIC_OLLAMA_URI', 'http://localhost:11434/v1/'),
       request_timeout: 120
     ).tap do |client|
       @logger.info("AI client configured for model: #{model}")
@@ -214,7 +214,7 @@ class Lintic
 
     response = @ai_client.chat(
       parameters: {
-        model: ENV.fetch('OLLAMA_MODEL', 'codellama'),
+        model: ENV.fetch('LINTIC_OLLAMA_MODEL', 'codellama'),
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
         max_tokens: 4000
@@ -363,7 +363,7 @@ if $PROGRAM_NAME == __FILE__
     is_ci = ENV['CI'] == 'true' || ENV['GITHUB_ACTIONS'] == 'true'
 
     # Validate required environment variables
-    required_vars = %w[GITHUB_TOKEN GITHUB_REPO GITHUB_PR_NUMBER]
+    required_vars = %w[LINTIC_GITHUB_TOKEN LINTIC_GITHUB_REPO LINTIC_GITHUB_PR_NUMBER]
     missing_vars = required_vars.select { |var| ENV[var].nil? || ENV[var].empty? }
 
     unless missing_vars.empty?
@@ -374,8 +374,8 @@ if $PROGRAM_NAME == __FILE__
 
     # Initialize and run
     lintic = Lintic.new
-    pr_number = ENV.fetch('GITHUB_PR_NUMBER').to_i
-    repo = ENV.fetch('GITHUB_REPO')
+    pr_number = ENV.fetch('LINTIC_GITHUB_PR_NUMBER').to_i
+    repo = ENV.fetch('LINTIC_GITHUB_REPO')
 
     if is_ci
       puts "::group::🚀 Starting Lintic for PR ##{pr_number} in #{repo}"

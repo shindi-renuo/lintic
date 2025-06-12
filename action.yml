@@ -75,11 +75,11 @@ runs:
       id: run-lintic
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
-        GITHUB_REPO: ${{ github.repository }}
-        GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
-        OLLAMA_MODEL: ${{ inputs.ollama-model }}
-        OLLAMA_URI: ${{ inputs.ollama-uri }}
+        LINTIC_GITHUB_TOKEN: ${{ inputs.github-token }}
+        LINTIC_GITHUB_REPO: ${{ github.repository }}
+        LINTIC_GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+        LINTIC_OLLAMA_MODEL: ${{ inputs.ollama-model }}
+        LINTIC_OLLAMA_URI: ${{ inputs.ollama-uri }}
       run: |
         # Copy the Lintic script to current directory
         cp ${{ github.action_path }}/main.rb ./lintic.rb
