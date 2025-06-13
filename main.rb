@@ -325,7 +325,7 @@ class Lintic
   def create_fix_pull_request(repo, branch_name, original_pr_number)
     base_branch = get_default_branch(repo)
 
-    title = "🧹 Fix linting errors (PR ##{original_pr_number})"
+    title = "[LINTIC] 🧹 Fix linting errors (PR ##{original_pr_number})"
     body = build_pr_body(original_pr_number)
 
     pr = @github_client.create_pull_request(repo, base_branch, branch_name, title, body)
@@ -379,7 +379,10 @@ if $PROGRAM_NAME == __FILE__
     repo = ENV.fetch('LINTIC_GITHUB_REPO')
 
     if is_ci
-      puts "::group::🚀 Starting Lintic for PR ##{pr_number} in #{repo}"
+      # puts "::group::🚀 Starting Lintic for PR ##{pr_number} in #{repo}"
+      File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') do |f|
+        f.puts "::group::🚀 Starting Lintic for PR ##{pr_number} in #{repo}"
+      end
     else
       puts "🚀 Starting Lintic for PR ##{pr_number} in #{repo}"
     end
@@ -387,26 +390,35 @@ if $PROGRAM_NAME == __FILE__
     result = lintic.process_pr(pr_number, repo)
 
     if is_ci
-      puts '::endgroup::'
+      # puts '::endgroup::'
+      File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') { |f| f.puts '::endgroup::' }
 
       if result && result > 0
-        puts "::notice title=Lintic Success::Successfully processed #{result} files with linting fixes"
+        # puts "::notice title=Lintic Success::Successfully processed #{result} files with linting fixes"
+        File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') do |f|
+          f.puts "::notice title=Lintic Success::Successfully processed #{result} files with linting fixes"
+        end
       else
-        puts '::notice title=Lintic Complete::No linting errors found or fixes needed'
+        # puts '::notice title=Lintic Complete::No linting errors found or fixes needed'
+        File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') do |f|
+          f.puts '::notice title=Lintic Complete::No linting errors found or fixes needed'
+        end
       end
     end
 
     puts '✅ Lintic completed successfully!'
   rescue Lintic::LinticError => e
     if is_ci
-      puts "::error title=Lintic Error::#{e.message}"
+      # puts "::error title=Lintic Error::#{e.message}"
+      File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') { |f| f.puts "::error title=Lintic Error::#{e.message}" }
     else
       puts "❌ Lintic Error: #{e.message}"
     end
     exit 1
   rescue StandardError => e
     if is_ci
-      puts "::error title=Unexpected Error::#{e.message}"
+      # puts "::error title=Unexpected Error::#{e.message}"
+      File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') { |f| f.puts "::error title=Unexpected Error::#{e.message}" }
     else
       puts "❌ Unexpected Error: #{e.message}"
       puts 'Please check your configuration and try again.'
