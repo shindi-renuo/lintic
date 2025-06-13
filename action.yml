@@ -23,10 +23,6 @@ inputs:
     description: 'Ruby version to use'
     required: false
     default: '3.1'
-  skip-install:
-    description: 'Skip Ollama installation (if already available)'
-    required: false
-    default: 'false'
 
 outputs:
   fixes-applied:
@@ -48,32 +44,6 @@ runs:
       shell: bash
       run: |
         gem install dotenv octokit ruby-openai rubocop
-
-    - name: Set up Ollama
-      if: inputs.skip-install != 'true'
-      shell: bash
-      run: |
-        if ! command -v ollama &> /dev/null; then
-          curl -fsSL https://ollama.ai/install.sh | sh
-        fi
-
-        # Start Ollama in background
-        ollama serve &
-        OLLAMA_PID=$!
-        echo "OLLAMA_PID=$OLLAMA_PID" >> $GITHUB_ENV
-
-        # Wait for Ollama to be ready
-        echo "Waiting for Ollama to start..."
-        for i in {1..30}; do
-          if curl -f http://localhost:11434/api/tags >/dev/null 2>&1; then
-            echo "Ollama is ready!"
-            break
-          fi
-          sleep 2
-        done
-
-        # Pull the model
-        ollama pull ${{ inputs.ollama-model }}
 
     - name: Run Lintic
       id: run-lintic
@@ -104,9 +74,7 @@ runs:
       if: always()
       shell: bash
       run: |
-        if [ ! -z "$OLLAMA_PID" ]; then
-          kill $OLLAMA_PID 2>/dev/null || true
-        fi
+        rm lintic.rb
 
 branding:
   icon: 'zap'
