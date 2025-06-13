@@ -338,22 +338,19 @@ class Lintic
   end
 
   def create_fix_branch(repo, pr_number, timestamp)
-    base_branch = get_default_branch(repo)
+    # Get the original PR to find its head branch and SHA
+    original_pr = @github_client.pull_request(repo, pr_number)
+    base_branch = original_pr.head.ref
+    base_sha = original_pr.head.sha
+
     branch_name = "lintic/fix-pr-#{pr_number}-#{timestamp}"
 
-    base_sha = @github_client.ref(repo, "heads/#{base_branch}").object.sha
     @github_client.create_ref(repo, "refs/heads/#{branch_name}", base_sha)
 
-    @logger.info("Created branch: #{branch_name}")
+    @logger.info("Created branch: #{branch_name} from #{base_branch}")
     branch_name
   rescue Octokit::Error => e
     raise GitHubError, "Failed to create branch: #{e.message}"
-  end
-
-  def get_default_branch(repo)
-    @github_client.repository(repo).default_branch
-  rescue Octokit::Error => e
-    raise GitHubError, "Failed to get default branch: #{e.message}"
   end
 
   def update_file_content(repo, branch_name, file_path, fixed_content)
@@ -373,7 +370,9 @@ class Lintic
   end
 
   def create_fix_pull_request(repo, branch_name, original_pr_number, summaries = [])
-    base_branch = get_default_branch(repo)
+    # Get the original PR to find its head branch
+    original_pr = @github_client.pull_request(repo, original_pr_number)
+    base_branch = original_pr.head.ref
 
     title = "[LINTIC] 🧹 Fix linting errors (PR ##{original_pr_number})"
     body = build_pr_body(original_pr_number, summaries)
