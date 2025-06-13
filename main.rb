@@ -37,7 +37,7 @@ class Lintic
         return 0
       end
 
-      fixes_applied = process_ruby_files(ruby_files, repo, pr_number)
+      fixes_applied, summaries = process_ruby_files(ruby_files, repo, pr_number)
 
       if fixes_applied > 0
         @logger.info("Successfully processed #{fixes_applied} files with linting fixes")
@@ -105,6 +105,7 @@ class Lintic
   def process_ruby_files(files, repo, pr_number)
     fixes_applied = 0
     timestamp = Time.now.strftime('%Y%m%d%H%M%S')
+    summaries = []
 
     # Get PR details to obtain the head commit SHA
     pr = @github_client.pull_request(repo, pr_number)
@@ -119,11 +120,12 @@ class Lintic
 
         if has_linting_errors?(linting_results)
           file_diff = get_file_diff(file)
-          fixed_content = fix_linting_errors(content, linting_results, file_diff)
+          result = fix_linting_errors(content, linting_results, file_diff)
 
-          if content_changed?(content, fixed_content)
-            apply_fixes(repo, file.filename, fixed_content, pr_number, timestamp)
+          if content_changed?(content, result[:fixed_content])
+            apply_fixes(repo, file.filename, result[:fixed_content], pr_number, timestamp, summaries)
             fixes_applied += 1
+            summaries << { file: file.filename, summary: result[:summary] } if result[:summary]
             @logger.info("Applied fixes to #{file.filename}")
           else
             @logger.info("No changes needed for #{file.filename}")
@@ -137,7 +139,7 @@ class Lintic
       end
     end
 
-    fixes_applied
+    [fixes_applied, summaries]
   end
 
   def fetch_file_content(repo, file, head_sha)
@@ -207,9 +209,54 @@ class Lintic
     linting_results['files'].flat_map { |file| file['offenses'] || [] }
   end
 
+  def generate_change_summary(file_content, fixed_content, offenses)
+    prompt = <<~PROMPT
+      You are a code reviewer. Please provide a concise, markdown-formatted summary of the changes made to fix the following linting errors.
+
+      IMPORTANT INSTRUCTIONS:
+      1. Focus on explaining WHAT was changed and WHY
+      2. Use bullet points for each significant change
+      3. Keep it brief but informative
+      4. Use technical but clear language
+      5. Format in markdown
+      6. Include the cop names in technical terms
+      7. Group similar changes together
+
+      ORIGINAL CODE:
+      ```ruby
+      #{file_content}
+      ```
+
+      FIXED CODE:
+      ```ruby
+      #{fixed_content}
+      ```
+
+      LINTING ERRORS FIXED:
+      #{offenses.map { |o| "- Line #{o['location']['line']}: #{o['message']} (#{o['cop_name']})" }.join("\n")}
+
+      Please provide a markdown-formatted summary of the changes:
+    PROMPT
+
+    response = @ai_client.chat(
+      parameters: {
+        model: ENV.fetch('LINTIC_OLLAMA_MODEL', 'codellama'),
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1,
+        max_tokens: 1000
+      }
+    )
+
+    content = response.dig('choices', 0, 'message', 'content')
+    content&.strip || 'No summary available'
+  rescue StandardError => e
+    @logger.error("Failed to generate change summary: #{e.message}")
+    'No summary available due to an error'
+  end
+
   def fix_linting_errors(file_content, linting_results, file_diff = nil)
     offenses = extract_offenses(linting_results)
-    return file_content if offenses.empty?
+    return { fixed_content: file_content, summary: nil } if offenses.empty?
 
     prompt = build_fix_prompt(file_content, offenses, file_diff)
 
@@ -222,7 +269,10 @@ class Lintic
       }
     )
 
-    extract_fixed_code(response)
+    fixed_content = extract_fixed_code(response)
+    summary = generate_change_summary(file_content, fixed_content, offenses)
+
+    { fixed_content: fixed_content, summary: summary }
   rescue StandardError => e
     @logger.error("AI fix generation failed: #{e.message}")
     raise AIError, "Failed to generate fixes: #{e.message}"
@@ -281,10 +331,10 @@ class Lintic
     original.strip != fixed.strip
   end
 
-  def apply_fixes(repo, file_path, fixed_content, pr_number, timestamp)
+  def apply_fixes(repo, file_path, fixed_content, pr_number, timestamp, summaries = [])
     branch_name = create_fix_branch(repo, pr_number, timestamp)
     update_file_content(repo, branch_name, file_path, fixed_content)
-    create_fix_pull_request(repo, branch_name, pr_number)
+    create_fix_pull_request(repo, branch_name, pr_number, summaries)
   end
 
   def create_fix_branch(repo, pr_number, timestamp)
@@ -322,11 +372,11 @@ class Lintic
     raise GitHubError, "Failed to update file content: #{e.message}"
   end
 
-  def create_fix_pull_request(repo, branch_name, original_pr_number)
+  def create_fix_pull_request(repo, branch_name, original_pr_number, summaries = [])
     base_branch = get_default_branch(repo)
 
     title = "[LINTIC] 🧹 Fix linting errors (PR ##{original_pr_number})"
-    body = build_pr_body(original_pr_number)
+    body = build_pr_body(original_pr_number, summaries)
 
     pr = @github_client.create_pull_request(repo, base_branch, branch_name, title, body)
     @logger.info("Created fix PR: #{pr.html_url}")
@@ -335,16 +385,25 @@ class Lintic
     raise GitHubError, "Failed to create pull request: #{e.message}"
   end
 
-  def build_pr_body(original_pr_number)
+  def build_pr_body(original_pr_number, summaries = [])
+    changes_summary = if summaries.any?
+                        summaries.map do |summary|
+                          <<~SUMMARY
+                            ### #{summary[:file]}
+                            #{summary[:summary]}
+                          SUMMARY
+                        end.join("\n\n")
+                      else
+                        "- RuboCop linting violations\n- Code style improvements\n- Best practices enforcement"
+                      end
+
     <<~BODY
       ## 🤖 Automated Linting Fixes
 
       This PR was automatically created by **Lintic** to fix linting errors found in PR ##{original_pr_number}.
 
       ### What was fixed:
-      - RuboCop linting violations
-      - Code style improvements
-      - Best practices enforcement
+      #{changes_summary}
 
       ### How to use:
       1. Review the changes in this PR
