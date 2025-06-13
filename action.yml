@@ -15,6 +15,10 @@ inputs:
     description: 'Ollama server URI'
     required: false
     default: 'http://localhost:11434/v1/'
+  openai-api-key:
+    description: 'OpenAI API key (if not using Ollama)'
+    required: false
+    default: 'ollama'
   ruby-version:
     description: 'Ruby version to use'
     required: false
@@ -80,6 +84,7 @@ runs:
         LINTIC_GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
         LINTIC_OLLAMA_MODEL: ${{ inputs.ollama-model }}
         LINTIC_OLLAMA_URI: ${{ inputs.ollama-uri }}
+        LINTIC_OPENAI_API_KEY: ${{ inputs.openai-api-key }}
       run: |
         # Copy the Lintic script to current directory
         cp ${{ github.action_path }}/main.rb ./lintic.rb

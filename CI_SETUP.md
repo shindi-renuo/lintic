@@ -92,8 +92,10 @@ jobs:
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `github-token` | GitHub token for API access | Yes | `${{ github.token }}` |
-| `ollama-model` | AI model to use for fixing | No | `qwen2.5-coder:1.5b` |
+| `lintic-github-token` | GitHub token for API access | Yes | `${{ github.token }}` |
+| `lintic-ollama-model` | AI model to use for fixing | No | `qwen2.5-coder:1.5b` |
+| `lintic-ollama-uri` | Ollama server URI | No | `http://localhost:11434/v1/` |
+| `lintic-openai-api-key` | OpenAI API key (if not using Ollama) | No | `ollama` |
 | `ruby-version` | Ruby version to use | No | `3.1` |
 | `skip-install` | Skip Ollama installation | No | `false` |
 
@@ -106,11 +108,12 @@ jobs:
 
 ### Environment Variables
 
-- `GITHUB_TOKEN`: Authentication token (automatically provided in workflows)
-- `GITHUB_REPO`: Repository name (automatically set)
-- `GITHUB_PR_NUMBER`: Pull request number (automatically set)
-- `OLLAMA_MODEL`: AI model to use (configurable)
-- `OLLAMA_URI`: Ollama server URL (defaults to localhost)
+- `LINTIC_GITHUB_TOKEN`: Authentication token (automatically provided in workflows)
+- `LINTIC_GITHUB_REPO`: Repository name (automatically set)
+- `LINTIC_GITHUB_PR_NUMBER`: Pull request number (automatically set)
+- `LINTIC_OLLAMA_MODEL`: AI model to use (configurable)
+- `LINTIC_OLLAMA_URI`: Ollama server URL (defaults to localhost)
+- `LINTIC_OPENAI_API_KEY`: OpenAI API key (defaults to 'ollama')
 
 ## How It Works
 

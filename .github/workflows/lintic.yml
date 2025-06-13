@@ -53,11 +53,12 @@ jobs:
 
       - name: Run Lintic
         env:
-          LINTIC_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LINTIC_GITHUB_TOKEN: ${{ secrets.LINTIC_GITHUB_TOKEN }}
           LINTIC_GITHUB_REPO: ${{ github.repository }}
           LINTIC_GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           LINTIC_OLLAMA_MODEL: qwen2.5-coder:1.5b
           LINTIC_OLLAMA_URI: http://localhost:11434/v1/
+          LINTIC_OPENAI_API_KEY: 'ollama'
         run: |
           ruby lintic.rb
 

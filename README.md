@@ -30,7 +30,7 @@ Follow these steps to set up and run Lintic.
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/lintic.git # Replace with actual repo URL if different
+    git clone https://github.com/shindi-renuo/lintic.git
     cd lintic
     ```
 2.  **Install dependencies:**
@@ -43,14 +43,17 @@ Follow these steps to set up and run Lintic.
 Create a `.env` file in the root directory of the `lintic` project and add the following environment variables:
 
 ```dotenv
-GITHUB_TOKEN="ghp_YOUR_ACTUAL_GITHUB_TOKEN"
-GITHUB_REPO="owner/repository-name"
-GITHUB_PR_NUMBER="123" # The number of the pull request you want to test
+LINTIC_GITHUB_TOKEN="ghp_YOUR_ACTUAL_GITHUB_TOKEN"
+LINTIC_GITHUB_REPO="owner/repository-name"
+LINTIC_GITHUB_PR_NUMBER="123" # The number of the pull request you want to test
+LINTIC_OLLAMA_MODEL="codellama"
+LINTIC_OLLAMA_URI="http://localhost:11434/v1/"
+LINTIC_OPENAI_API_KEY="ollama"
 ```
 
-*   **`GITHUB_TOKEN`**: A GitHub Personal Access Token with `repo` scope (full control of private repositories) and potentially `workflow` scope if you plan to integrate with GitHub Actions. You can generate one from [GitHub Developer Settings](https://github.com/settings/tokens).
-*   **`GITHUB_REPO`**: The full name of your GitHub repository in the format `owner/repository-name` (e.g., `renuo/my-project`).
-*   **`GITHUB_PR_NUMBER`**: The numerical ID of the pull request you want Lintic to process.
+*   **`LINTIC_GITHUB_TOKEN`**: A GitHub Personal Access Token with `repo` scope (full control of private repositories) and potentially `workflow` scope if you plan to integrate with GitHub Actions. You can generate one from [GitHub Developer Settings](https://github.com/settings/tokens).
+*   **`LINTIC_GITHUB_REPO`**: The full name of your GitHub repository in the format `owner/repository-name` (e.g., `renuo/my-project`).
+*   **`LINTIC_GITHUB_PR_NUMBER`**: The numerical ID of the pull request you want Lintic to process.
 
 ### Usage
 
@@ -89,13 +92,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Fix linting errors with Lintic
         uses: shindi-renuo/lintic@main
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          ollama-model: qwen2.5-coder:1.5b
-          ollama-uri: http://localhost:11434/v1/
-```
+          lintic-github-token: ${{ secrets.LINTIC_GITHUB_TOKEN }}
+          lintic-ollama-model: qwen2.5-coder:1.5b
+          lintic-ollama-uri: http://localhost:11434/v1/
+          lintic-openai-api-key: 'ollama'
 
 For detailed setup instructions, configuration options, and troubleshooting, see [CI_SETUP.md](CI_SETUP.md).
 

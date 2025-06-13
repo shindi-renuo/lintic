@@ -81,7 +81,8 @@ class Lintic
 
     OpenAI::Client.new(
       uri_base: ENV.fetch('LINTIC_OLLAMA_URI', 'http://localhost:11434/v1/'),
-      request_timeout: 120
+      request_timeout: 120,
+      access_token: ENV.fetch('LINTIC_OPENAI_API_KEY', 'ollama')
     ).tap do |client|
       @logger.info("AI client configured for model: #{model}")
     end
