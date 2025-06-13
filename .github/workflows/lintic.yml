@@ -34,31 +34,13 @@ jobs:
         run: |
           curl -o lintic.rb https://raw.githubusercontent.com/shindi-renuo/lintic/main/main.rb
 
-      - name: Check if Ollama model is available
-        id: check_ollama
-        run: |
-          if curl -f http://localhost:11434/api/tags >/dev/null 2>&1; then
-            echo "ollama_available=true" >> $GITHUB_OUTPUT
-          else
-            echo "ollama_available=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Set up Ollama (if not available)
-        if: steps.check_ollama.outputs.ollama_available == 'false'
-        run: |
-          curl -fsSL https://ollama.ai/install.sh | sh
-          ollama serve &
-          sleep 10
-          ollama pull qwen2.5-coder:1.5b
-
       - name: Run Lintic
         env:
           LINTIC_GITHUB_TOKEN: ${{ secrets.LINTIC_GITHUB_TOKEN }}
           LINTIC_GITHUB_REPO: ${{ github.repository }}
-          LINTIC_GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
-          LINTIC_OLLAMA_MODEL: qwen2.5-coder:1.5b
-          LINTIC_OLLAMA_URI: http://localhost:11434/v1/
-          LINTIC_OPENAI_API_KEY: 'ollama'
+          LINTIC_OLLAMA_MODEL: ${{ secrets.LINTIC_OLLAMA_MODEL }}
+          LINTIC_OLLAMA_URI: ${{ secrets.LINTIC_OLLAMA_URI }}
+          LINTIC_OPENAI_API_KEY: ${{ secrets.LINTIC_OPENAI_API_KEY }}
         run: |
           ruby lintic.rb
 
