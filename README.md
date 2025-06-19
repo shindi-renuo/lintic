@@ -1,8 +1,6 @@
-# Lintic
-
 <div align="center">
 
-<img src="repo/logo.png" alt="Lintic Logo" width="120" height="120">
+<img src="repo/logo.png" alt="Lintic Logo" width="250" height="250">
 
 # 🩺 Lintic
 
