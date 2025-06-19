@@ -1,14 +1,14 @@
 # Lintic
 
 <div align="center">
-  <table border="0">
-    <tr>
-      <td width="60%" valign="top">
+  <table style="border: none; border-collapse: collapse;">
+    <tr style="border: none;">
+      <td width="60%" valign="top" style="border: none; padding: 0;">
         <h3>🩺 A medic for linting errors</h3>
         <p>Automatically detect and fix RuboCop linting violations in your pull requests using AI-powered corrections. Never worry about CI failures due to linting errors again!</p>
         <p><em>✨ Smart • 🤖 AI-Powered • 🛡️ Safe • ⚡ Fast</em></p>
       </td>
-      <td width="40%" align="center" valign="top">
+      <td width="40%" align="center" valign="top" style="border: none; padding: 0;">
         <img src="repo/logo.png" alt="Lintic Logo" width="180" height="180">
         <br><br>
         <a href="https://www.ruby-lang.org/"><img src="https://img.shields.io/badge/Ruby-3.0+-CC342D?style=flat&logo=ruby&logoColor=white" alt="Ruby"></a><br>
