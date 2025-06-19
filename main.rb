@@ -95,7 +95,7 @@ class Lintic
       token = ENV.fetch("LINTIC_GITHUB_TOKEN", nil)
       raise LinticError, "LINTIC_GITHUB_TOKEN environment variable is required" unless token
 
-      Octokit::Client.new(access_token: token).tap do |_client|
+      Octokit::Client.new(access_token: token).tap do |client|
         # Test the connection
         client.user
         logger.info("GitHub client configured successfully")
@@ -889,12 +889,16 @@ if $PROGRAM_NAME == __FILE__
       exit 1
     end
 
+    puts "🔍 Initializing Lintic..." if is_ci
     lintic = Lintic.new
+
+    puts "🔍 Detecting PR number..." if is_ci
     pr_number = Lintic::PRNumberDetector.detect
     repo = ENV.fetch("LINTIC_GITHUB_REPO")
 
     if is_ci
       Lintic::GitHubSummaryWriter.write("::group::🚀 Starting Lintic for PR ##{pr_number} in #{repo}")
+      puts "🚀 Starting Lintic for PR ##{pr_number} in #{repo}"
     else
       puts "🚀 Starting Lintic for PR ##{pr_number} in #{repo}"
     end
@@ -915,19 +919,15 @@ if $PROGRAM_NAME == __FILE__
 
     puts "✅ Lintic completed successfully!"
   rescue Lintic::LinticError => e
-    if is_ci
-      Lintic::GitHubSummaryWriter.write("::error title=Lintic Error::#{e.message}")
-    else
-      puts "❌ Lintic Error: #{e.message}"
-    end
+    error_msg = "❌ Lintic Error: #{e.message}"
+    puts error_msg
+    Lintic::GitHubSummaryWriter.write("::error title=Lintic Error::#{e.message}") if is_ci
     exit 1
   rescue StandardError => e
-    if is_ci
-      Lintic::GitHubSummaryWriter.write("::error title=Unexpected Error::#{e.message}")
-    else
-      puts "❌ Unexpected Error: #{e.message}"
-      puts "Please check your configuration and try again."
-    end
+    error_msg = "❌ Unexpected Error: #{e.message}"
+    puts error_msg
+    puts "Please check your configuration and try again."
+    Lintic::GitHubSummaryWriter.write("::error title=Unexpected Error::#{e.message}") if is_ci
     exit 1
   end
 end
