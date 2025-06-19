@@ -1,22 +1,18 @@
 # Lintic
 
-<div align="center">
-  <table style="border: none; border-collapse: collapse;">
-    <tr style="border: none;">
-      <td width="60%" valign="top" style="border: none; padding: 0;">
-        <h3>🩺 A medic for linting errors</h3>
-        <p>Automatically detect and fix RuboCop linting violations in your pull requests using AI-powered corrections. Never worry about CI failures due to linting errors again!</p>
-        <p><em>✨ Smart • 🤖 AI-Powered • 🛡️ Safe • ⚡ Fast</em></p>
-      </td>
-      <td width="40%" align="center" valign="top" style="border: none; padding: 0;">
-        <img src="repo/logo.png" alt="Lintic Logo" width="180" height="180">
-        <br><br>
-        <a href="https://www.ruby-lang.org/"><img src="https://img.shields.io/badge/Ruby-3.0+-CC342D?style=flat&logo=ruby&logoColor=white" alt="Ruby"></a><br>
-        <a href="action.yml"><img src="https://img.shields.io/badge/GitHub_Action-Available-blue?style=flat&logo=github&logoColor=white" alt="GitHub Action"></a><br>
-        <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
-      </td>
-    </tr>
-  </table>
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 0 20px;">
+  <div style="flex: 1; max-width: 600px;">
+    <h3>🩺 A medic for linting errors</h3>
+    <p>Automatically detect and fix RuboCop linting violations in your pull requests using AI-powered corrections. Never worry about CI failures due to linting errors again!</p>
+    <p><em>✨ Smart • 🤖 AI-Powered • 🛡️ Safe • ⚡ Fast</em></p>
+  </div>
+  <div style="text-align: center;">
+    <img src="repo/logo.png" alt="Lintic Logo" width="180" height="180">
+    <br><br>
+    <a href="https://www.ruby-lang.org/"><img src="https://img.shields.io/badge/Ruby-3.0+-CC342D?style=flat&logo=ruby&logoColor=white" alt="Ruby"></a><br>
+    <a href="action.yml"><img src="https://img.shields.io/badge/GitHub_Action-Available-blue?style=flat&logo=github&logoColor=white" alt="GitHub Action"></a><br>
+    <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
+  </div>
 </div>
 
 ## Purpose
