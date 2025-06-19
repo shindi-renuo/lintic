@@ -118,7 +118,7 @@ When running manually or in custom setups, these environment variables are used:
 | `LINTIC_GITHUB_TOKEN` | GitHub authentication token | ✅ | - |
 | `LINTIC_GITHUB_REPO` | Repository in format `owner/repo` | ✅ | - |
 | `LINTIC_GITHUB_PR_NUMBER` | Pull request number to process | ✅ | - |
-| `LINTIC_MODEL` | AI model to use | ❌ | `codellama` |
+| `LINTIC_MODEL` | AI model to use | ❌ | `qwen2.5-coder:1.5b` |
 | `LINTIC_URI` | Server URL for AI model | ❌ | `http://localhost:11434/v1/` |
 | `LINTIC_OPENAI_API_KEY` | OpenAI API key | ❌ | `ollama` |
 
@@ -161,11 +161,11 @@ The condition `if: github.event.pull_request.head.repo.full_name == github.repos
 
 #### Ollama Models (Recommended)
 ```yaml
-- name: Fix linting errors with Lintic (CodeLlama)
+- name: Fix linting errors with Lintic (Qwen 2.5 Coder 1.5B)
   uses: shindi-renuo/lintic@main
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    ollama-model: codellama:7b
+    ollama-model: qwen2.5-coder:1.5b
     ollama-uri: http://localhost:11434/v1/
 ```
 
@@ -285,10 +285,7 @@ jobs:
 
 1. **Test Locally First**: Run Lintic locally before enabling in CI
 2. **Review Generated PRs**: Always review fix PRs before merging - AI isn't perfect
-3. **Model Selection**:
-   - `qwen2.5-coder:1.5b` - Fast, good for simple fixes
-   - `codellama:7b` - Better understanding, slower
-   - `gpt-4` - Best quality, requires OpenAI API key
+3. **Model Selection**: You can use any model from any provider that supports the OpenAI Spec
 4. **Exclude Lintic PRs**: Add condition to prevent Lintic from running on its own PRs
 5. **Monitor Costs**: Track API usage if using OpenAI models
 

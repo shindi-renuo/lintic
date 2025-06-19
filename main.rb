@@ -18,6 +18,20 @@ class Lintic
   class LintingError < LinticError; end
   class AIError < LinticError; end
 
+  # Constants
+  DEFAULT_MODEL = 'qwen2.5-coder:1.5b'
+  DEFAULT_OLLAMA_URI = 'http://localhost:11434/v1/'
+  DEFAULT_AI_TOKEN = 'ollama'
+  REQUEST_TIMEOUT = 120
+  AI_TEMPERATURE = 0.1
+  MAX_SUMMARY_TOKENS = 1000
+  MAX_FIX_TOKENS = 4000
+  BRANCH_PREFIX = 'lintic/fix-pr'
+  COMMIT_MESSAGE = '🤖 Fix linting errors with Lintic'
+  TEMPFILE_PREFIX = 'lintic_check'
+  RUBY_FILE_EXTENSIONS = %w[.rb .rake .gemspec].freeze
+  RUBY_SHEBANG_PATTERN = /\A#!.*ruby/
+
   def initialize
     @logger = setup_logger
     @github_client = setup_github_client
@@ -26,6 +40,7 @@ class Lintic
   end
 
   def process_pr(pr_number, repo)
+    validate_inputs(pr_number, repo)
     @logger.info("Processing PR ##{pr_number} in #{repo}")
 
     begin
@@ -54,6 +69,12 @@ class Lintic
 
   private
 
+  def validate_inputs(pr_number, repo)
+    raise LinticError, 'PR number must be a positive integer' unless pr_number.is_a?(Integer) && pr_number.positive?
+    raise LinticError, 'Repository must be a non-empty string' if repo.nil? || repo.strip.empty?
+    raise LinticError, 'Repository must be in owner/repo format' unless repo.match?(%r{\A[\w.-]+/[\w.-]+\z})
+  end
+
   def setup_logger
     logger = Logger.new($stdout)
     logger.level = Logger::INFO
@@ -77,12 +98,12 @@ class Lintic
   end
 
   def setup_ai_client
-    model = ENV.fetch('LINTIC_MODEL', 'codellama')
+    model = ENV.fetch('LINTIC_MODEL', DEFAULT_MODEL)
 
     OpenAI::Client.new(
-      uri_base: ENV.fetch('LINTIC_URI', 'http://localhost:11434/v1/'),
-      request_timeout: 120,
-      access_token: ENV.fetch('LINTIC_OPENAI_API_KEY', 'ollama')
+      uri_base: ENV.fetch('LINTIC_URI', DEFAULT_OLLAMA_URI),
+      request_timeout: REQUEST_TIMEOUT,
+      access_token: ENV.fetch('LINTIC_OPENAI_API_KEY', DEFAULT_AI_TOKEN)
     ).tap do |client|
       @logger.info("AI client configured for model: #{model}")
     end
@@ -92,14 +113,30 @@ class Lintic
 
   def fetch_pr_files(pr_number, repo)
     @github_client.pull_request_files(repo, pr_number)
+  rescue Octokit::NotFound
+    raise GitHubError, "PR ##{pr_number} not found in repository #{repo}"
   rescue Octokit::Error => e
     raise GitHubError, "Failed to fetch PR files: #{e.message}"
   end
 
   def filter_ruby_files(files)
-    ruby_files = files.select { |file| file.filename.end_with?('.rb') }
+    ruby_files = files.select { |file| ruby_file?(file) }
     @logger.info("Found #{ruby_files.size} Ruby files in PR")
     ruby_files
+  end
+
+  def ruby_file?(file)
+    return false if file.status == 'removed'
+
+    # Check file extension
+    return true if RUBY_FILE_EXTENSIONS.any? { |ext| file.filename.end_with?(ext) }
+
+    # Check for Ruby shebang in the first line if file has no extension
+    return false unless File.extname(file.filename).empty?
+
+    # For files without extension, we'd need to check content (simplified here)
+    # In a real implementation, you might want to fetch a small portion of the file
+    false
   end
 
   def process_ruby_files(files, repo, pr_number)
@@ -116,6 +153,8 @@ class Lintic
 
       begin
         content = fetch_file_content(repo, file, head_sha)
+        next if content.strip.empty?
+
         linting_results = run_linting_check(content)
 
         if has_linting_errors?(linting_results)
@@ -145,18 +184,26 @@ class Lintic
   def fetch_file_content(repo, file, head_sha)
     # Get the raw content of the file from the PR head commit
     response = @github_client.contents(repo, path: file.filename, ref: head_sha)
-    Base64.decode64(response.content)
+    decoded_content = Base64.decode64(response.content)
+
+    # Validate that content is not binary
+    if decoded_content.encoding == Encoding::ASCII_8BIT && !decoded_content.valid_encoding?
+      @logger.warn("Skipping binary file: #{file.filename}")
+      return ''
+    end
+
+    decoded_content
   rescue Octokit::Error => e
     raise GitHubError, "Failed to fetch file content for #{file.filename}: #{e.message}"
   end
 
   def get_file_diff(file)
     # Return the patch/diff content which shows only the changes
-    file.patch
+    file.patch || ''
   end
 
   def run_linting_check(file_content)
-    Tempfile.create(['lintic_check', '.rb']) do |tempfile|
+    Tempfile.create([TEMPFILE_PREFIX, '.rb']) do |tempfile|
       tempfile.write(file_content)
       tempfile.close
 
@@ -204,46 +251,49 @@ class Lintic
   end
 
   def extract_offenses(linting_results)
-    return [] unless linting_results['files']
+    return [] unless linting_results.is_a?(Hash) && linting_results['files']
 
     linting_results['files'].flat_map { |file| file['offenses'] || [] }
   end
 
   def generate_change_summary(file_content, fixed_content, offenses)
+    return 'No summary available - no content provided' if file_content.strip.empty? || fixed_content.strip.empty?
+
     prompt = <<~PROMPT
       You are a code reviewer. Please provide a concise, markdown-formatted summary of the changes made to fix the following linting errors.
 
       IMPORTANT INSTRUCTIONS:
       1. Focus on explaining WHAT was changed and WHY
       2. Use bullet points for each significant change
-      3. Keep it brief but informative
+      3. Keep it brief but informative (max 200 words)
       4. Use technical but clear language
       5. Format in markdown
       6. Include the cop names in technical terms
       7. Group similar changes together
+      8. Only mention actual changes made
 
       ORIGINAL CODE:
       ```ruby
-      #{file_content}
+      #{file_content[0..2000]}#{file_content.length > 2000 ? "\n... (truncated)" : ''}
       ```
 
       FIXED CODE:
       ```ruby
-      #{fixed_content}
+      #{fixed_content[0..2000]}#{fixed_content.length > 2000 ? "\n... (truncated)" : ''}
       ```
 
       LINTING ERRORS FIXED:
-      #{offenses.map { |o| "- Line #{o['location']['line']}: #{o['message']} (#{o['cop_name']})" }.join("\n")}
+      #{offenses.map { |o| "- Line #{o.dig('location', 'line') || 'unknown'}: #{o['message']} (#{o['cop_name']})" }.join("\n")}
 
       Please provide a markdown-formatted summary of the changes:
     PROMPT
 
     response = @ai_client.chat(
       parameters: {
-        model: ENV.fetch('LINTIC_MODEL', 'codellama'),
+        model: ENV.fetch('LINTIC_MODEL', DEFAULT_MODEL),
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.1,
-        max_tokens: 1000
+        temperature: AI_TEMPERATURE,
+        max_tokens: MAX_SUMMARY_TOKENS
       }
     )
 
@@ -262,10 +312,10 @@ class Lintic
 
     response = @ai_client.chat(
       parameters: {
-        model: ENV.fetch('LINTIC_MODEL', 'codellama'),
+        model: ENV.fetch('LINTIC_MODEL', DEFAULT_MODEL),
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.1,
-        max_tokens: 4000
+        temperature: AI_TEMPERATURE,
+        max_tokens: MAX_FIX_TOKENS
       }
     )
 
@@ -280,24 +330,30 @@ class Lintic
 
   def build_fix_prompt(file_content, offenses, file_diff = nil)
     offense_summary = offenses.map do |offense|
-      "- Line #{offense['location']['line']}: #{offense['message']} (#{offense['cop_name']})"
+      line_num = offense.dig('location', 'line') || 'unknown'
+      "- Line #{line_num}: #{offense['message']} (#{offense['cop_name']})"
     end.join("\n")
 
-    diff_context = file_diff ? "\n\nPR DIFF (focus on these changes):\n```diff\n#{file_diff}\n```" : ''
+    diff_context = if file_diff && !file_diff.strip.empty?
+                     "\n\nPR DIFF (focus on these changes):\n```diff\n#{file_diff}\n```"
+                   else
+                     ''
+                   end
 
     <<~PROMPT
       You are an expert Ruby developer and code reviewer. Please fix the following Ruby code to resolve all RuboCop linting errors.
 
-      This code is from a Pull Request. Focus ONLY on fixing linting errors in the changed lines shown in the diff below.
+      This code is from a Pull Request. Focus ONLY on fixing linting errors#{file_diff ? ' in the changed lines shown in the diff below' : ''}.
 
       IMPORTANT INSTRUCTIONS:
       1. Return ONLY the corrected Ruby code (the complete fixed file content)
-      2. Maintain the original functionality and logic
-      3. Fix ONLY the linting errors in the changed lines (shown in the diff)
+      2. Maintain the original functionality and logic exactly
+      3. Fix ONLY the linting errors specified below
       4. Do not modify code that wasn't changed in the PR unless it's necessary to fix linting errors
-      5. Do not add any explanations or comments about the changes
-      6. Preserve the original code structure as much as possible
-      7. Focus on the lines marked with + in the diff - these are the new/changed lines
+      5. Do not add any explanations, comments, or markdown formatting
+      6. Preserve the original code structure and indentation style
+      7. Ensure the output is valid Ruby code that runs without syntax errors
+      #{'8. Focus primarily on the lines marked with + in the diff - these are the new/changed lines' if file_diff}
 
       ORIGINAL CODE:
       ```ruby
@@ -316,18 +372,29 @@ class Lintic
 
     raise AIError, 'No content received from AI model' unless content
 
+    # Clean up the content first
+    content = content.strip
+
     # Try to extract from Ruby markdown block first
     return Regexp.last_match(1).strip if content =~ /```ruby\s*(.+?)\s*```/m
 
     # Try to extract from generic code block
     return Regexp.last_match(1).strip if content =~ /```\s*(.+?)\s*```/m
 
-    # If no code block, return the content as-is (but log a warning)
-    @logger.warn('AI response did not contain a code block, using full response')
-    content.strip
+    # If no code block, check if the entire response looks like Ruby code
+    if content.include?('def ') || content.include?('class ') || content.include?('module ') || content.start_with?('#')
+      @logger.warn('AI response did not contain a code block, but appears to be Ruby code')
+      return content
+    end
+
+    # Last resort: return content as-is but log a warning
+    @logger.warn('AI response format unexpected, using full response')
+    content
   end
 
   def content_changed?(original, fixed)
+    return false if original.nil? || fixed.nil?
+
     original.strip != fixed.strip
   end
 
@@ -343,7 +410,7 @@ class Lintic
     base_branch = original_pr.head.ref
     base_sha = original_pr.head.sha
 
-    branch_name = "lintic/fix-pr-#{pr_number}-#{timestamp}"
+    branch_name = "#{BRANCH_PREFIX}-#{pr_number}-#{timestamp}"
 
     @github_client.create_ref(repo, "refs/heads/#{branch_name}", base_sha)
 
@@ -360,7 +427,7 @@ class Lintic
     @github_client.update_contents(
       repo,
       file_path,
-      '🤖 Fix linting errors with Lintic',
+      COMMIT_MESSAGE,
       current_file.sha,
       fixed_content,
       branch: branch_name
@@ -413,6 +480,14 @@ class Lintic
       *Generated automatically by [Lintic](https://github.com/shindi-renuo/lintic) 🚀*
     BODY
   end
+
+  def write_to_github_summary(message)
+    return unless ENV['GITHUB_STEP_SUMMARY']
+
+    File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') { |f| f.puts message }
+  rescue StandardError => e
+    @logger.warn("Failed to write to GitHub step summary: #{e.message}")
+  end
 end
 
 # CLI execution
@@ -436,11 +511,14 @@ if $PROGRAM_NAME == __FILE__
     pr_number = ENV.fetch('LINTIC_GITHUB_PR_NUMBER').to_i
     repo = ENV.fetch('LINTIC_GITHUB_REPO')
 
+    # Validate PR number
+    if pr_number <= 0
+      puts '❌ LINTIC_GITHUB_PR_NUMBER must be a positive integer'
+      exit 1
+    end
+
     if is_ci
-      # puts "::group::🚀 Starting Lintic for PR ##{pr_number} in #{repo}"
-      File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') do |f|
-        f.puts "::group::🚀 Starting Lintic for PR ##{pr_number} in #{repo}"
-      end
+      lintic.send(:write_to_github_summary, "::group::🚀 Starting Lintic for PR ##{pr_number} in #{repo}")
     else
       puts "🚀 Starting Lintic for PR ##{pr_number} in #{repo}"
     end
@@ -448,35 +526,27 @@ if $PROGRAM_NAME == __FILE__
     result = lintic.process_pr(pr_number, repo)
 
     if is_ci
-      # puts '::endgroup::'
-      File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') { |f| f.puts '::endgroup::' }
+      lintic.send(:write_to_github_summary, '::endgroup::')
 
       if result && result > 0
-        # puts "::notice title=Lintic Success::Successfully processed #{result} files with linting fixes"
-        File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') do |f|
-          f.puts "::notice title=Lintic Success::Successfully processed #{result} files with linting fixes"
-        end
+        lintic.send(:write_to_github_summary,
+                    "::notice title=Lintic Success::Successfully processed #{result} files with linting fixes")
       else
-        # puts '::notice title=Lintic Complete::No linting errors found or fixes needed'
-        File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') do |f|
-          f.puts '::notice title=Lintic Complete::No linting errors found or fixes needed'
-        end
+        lintic.send(:write_to_github_summary, '::notice title=Lintic Complete::No linting errors found or fixes needed')
       end
     end
 
     puts '✅ Lintic completed successfully!'
   rescue Lintic::LinticError => e
     if is_ci
-      # puts "::error title=Lintic Error::#{e.message}"
-      File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') { |f| f.puts "::error title=Lintic Error::#{e.message}" }
+      lintic&.send(:write_to_github_summary, "::error title=Lintic Error::#{e.message}")
     else
       puts "❌ Lintic Error: #{e.message}"
     end
     exit 1
   rescue StandardError => e
     if is_ci
-      # puts "::error title=Unexpected Error::#{e.message}"
-      File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') { |f| f.puts "::error title=Unexpected Error::#{e.message}" }
+      lintic&.send(:write_to_github_summary, "::error title=Unexpected Error::#{e.message}")
     else
       puts "❌ Unexpected Error: #{e.message}"
       puts 'Please check your configuration and try again.'

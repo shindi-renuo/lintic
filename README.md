@@ -102,7 +102,7 @@ jobs:
 2. **Install and start Ollama:**
    ```bash
    # Install Ollama from https://ollama.ai/
-   ollama pull qwen2.5-coder:1.5b  # or codellama
+   ollama pull qwen2.5-coder:1.5b  # or any other model
    ```
 
 3. **Configure environment:**
@@ -139,7 +139,7 @@ jobs:
 ### Supported AI Models
 
 - **Ollama (Recommended)**: `qwen2.5-coder:1.5b`, `codellama`, `deepseek-coder`
-- **OpenAI**: `gpt-4`, `gpt-3.5-turbo` (requires valid API key)
+- **OpenAI**: `gpt-4`, `gpt-4.1` (requires valid API key)
 
 ## GitHub Action Inputs
 
