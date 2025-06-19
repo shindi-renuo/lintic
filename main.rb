@@ -154,16 +154,43 @@ class Lintic
 
       lintic_body = pr.body&.include?("Generated automatically by [Lintic]")
 
-      is_lintic_pr = lintic_title || lintic_branch || lintic_body
+      # Check if recent commits indicate a Lintic merge
+      recent_lintic_activity = recent_lintic_commits?(repo, pr)
+
+      is_lintic_pr = lintic_title || lintic_branch || lintic_body || recent_lintic_activity
 
       if is_lintic_pr
-        @logger.info("Skipping Lintic-created PR ##{pr_number} to prevent recursion")
+        @logger.info("Skipping Lintic-related PR ##{pr_number} to prevent recursion")
         return true
       end
 
       false
     rescue Octokit::Error => e
       @logger.warn("Could not check if PR ##{pr_number} was created by Lintic: #{e.message}")
+      false
+    end
+
+    def recent_lintic_commits?(repo, pr)
+      # Get recent commits from the PR branch
+      commits = @github_client.pull_request_commits(repo, pr.number)
+
+      # Check the last few commits for Lintic's signature
+      recent_commits = commits.last(5) # Check last 5 commits
+
+      lintic_commits = recent_commits.any? do |commit|
+        commit_message = commit.commit.message
+        # Check if commit message matches Lintic's pattern
+        commit_message.include?(Config::COMMIT_MESSAGE) ||
+          commit_message.include?("Fix linting errors with Lintic") ||
+          commit_message.include?("🤖") ||
+          (commit_message.include?("Merge") && commit_message.include?("lintic"))
+      end
+
+      @logger.info("Recent Lintic commits detected in PR - skipping to prevent recursion") if lintic_commits
+
+      lintic_commits
+    rescue Octokit::Error => e
+      @logger.warn("Could not check recent commits for Lintic activity: #{e.message}")
       false
     end
 
