@@ -1,7 +1,7 @@
 # Lintic
 
 <div align="center">
-  <table>
+  <table border="0">
     <tr>
       <td width="60%" valign="top">
         <h3>🩺 A medic for linting errors</h3>
