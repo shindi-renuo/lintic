@@ -122,6 +122,48 @@ jobs:
    ruby main.rb
    ```
 
+## Try It Out
+
+Want to see Lintic in action? We've created an example repository with intentional Ruby style violations that you can use to test Lintic:
+
+**🧪 [Example Repository](https://github.com/shindi-renuo/example)**
+
+### What's in the example:
+
+- **`bad_style.rb`**: Contains various Ruby style violations including:
+  - Incorrect class naming (not using CamelCase)
+  - Incorrect indentation
+  - Missing spaces around operators
+  - Unnecessary parentheses in method definitions
+  - Mutable default arguments
+  - Unnecessary return statements
+- **`.rubocop.yml`**: RuboCop configuration
+- **`Gemfile`**: Project dependencies
+
+### How to test:
+
+1. **Fork the example repository**
+2. **Clone your fork locally:**
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/example.git
+   cd example
+   ```
+
+3. **Create a branch with style issues:**
+   ```bash
+   git checkout -b feature/test-lintic
+   # Make some changes to bad_style.rb to introduce more style issues
+   git add .
+   git commit -m "Add more style violations"
+   git push origin feature/test-lintic
+   ```
+
+4. **Create a pull request** from your `feature/test-lintic` branch
+5. **Set up Lintic** on your fork using the GitHub Action configuration above
+6. **Watch Lintic automatically create a fix PR** with AI-powered corrections!
+
+This example repository demonstrates all the common Ruby style issues that Lintic can detect and fix automatically.
+
 ## Configuration
 
 ### Environment Variables
