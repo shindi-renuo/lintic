@@ -834,13 +834,17 @@ class Lintic
   # Detects PR number from GitHub Actions environment
   class PRNumberDetector
     def self.detect
-      # Try to detect from GitHub Actions environment
+      # First try to get PR number from explicit environment variable (recommended)
+      pr_number = ENV["LINTIC_PR_NUMBER"]&.to_i
+      return pr_number if pr_number&.positive?
+
+      # Fallback to detection from GitHub Actions environment
       pr_number = detect_from_github_actions
       return pr_number if pr_number&.positive?
 
       # If we can't detect automatically, raise an error
       raise LinticError,
-            "Unable to detect PR number. Please ensure this is running in a GitHub Actions PR context"
+            "Unable to detect PR number. Please set LINTIC_PR_NUMBER environment variable or ensure this is running in a GitHub Actions PR context"
     end
 
     def self.detect_from_github_actions
