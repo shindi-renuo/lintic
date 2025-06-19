@@ -38,8 +38,8 @@ jobs:
         env:
           LINTIC_GITHUB_TOKEN: ${{ secrets.LINTIC_GITHUB_TOKEN }}
           LINTIC_GITHUB_REPO: ${{ github.repository }}
-          LINTIC_OLLAMA_MODEL: ${{ secrets.LINTIC_OLLAMA_MODEL }}
-          LINTIC_OLLAMA_URI: ${{ secrets.LINTIC_OLLAMA_URI }}
+          LINTIC_MODEL: ${{ secrets.LINTIC_MODEL }}
+          LINTIC_URI: ${{ secrets.LINTIC_URI }}
           LINTIC_OPENAI_API_KEY: ${{ secrets.LINTIC_OPENAI_API_KEY }}
         run: |
           ruby lintic.rb

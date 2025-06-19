@@ -77,10 +77,10 @@ class Lintic
   end
 
   def setup_ai_client
-    model = ENV.fetch('LINTIC_OLLAMA_MODEL', 'codellama')
+    model = ENV.fetch('LINTIC_MODEL', 'codellama')
 
     OpenAI::Client.new(
-      uri_base: ENV.fetch('LINTIC_OLLAMA_URI', 'http://localhost:11434/v1/'),
+      uri_base: ENV.fetch('LINTIC_URI', 'http://localhost:11434/v1/'),
       request_timeout: 120,
       access_token: ENV.fetch('LINTIC_OPENAI_API_KEY', 'ollama')
     ).tap do |client|
@@ -240,7 +240,7 @@ class Lintic
 
     response = @ai_client.chat(
       parameters: {
-        model: ENV.fetch('LINTIC_OLLAMA_MODEL', 'codellama'),
+        model: ENV.fetch('LINTIC_MODEL', 'codellama'),
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
         max_tokens: 1000
@@ -262,7 +262,7 @@ class Lintic
 
     response = @ai_client.chat(
       parameters: {
-        model: ENV.fetch('LINTIC_OLLAMA_MODEL', 'codellama'),
+        model: ENV.fetch('LINTIC_MODEL', 'codellama'),
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
         max_tokens: 4000
