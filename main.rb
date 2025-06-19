@@ -830,13 +830,53 @@ class Lintic
       warn("Failed to write to GitHub step summary: #{e.message}")
     end
   end
+
+  # Detects PR number from GitHub Actions environment
+  class PRNumberDetector
+    def self.detect
+      # Try to detect from GitHub Actions environment
+      pr_number = detect_from_github_actions
+      return pr_number if pr_number&.positive?
+
+      # If we can't detect automatically, raise an error
+      raise LinticError,
+            "Unable to detect PR number. Please ensure this is running in a GitHub Actions PR context"
+    end
+
+    def self.detect_from_github_actions
+      detect_from_github_ref || detect_from_event_payload || detect_from_ref_name
+    end
+
+    def self.detect_from_github_ref
+      return unless ENV["GITHUB_REF"]
+
+      match = ENV["GITHUB_REF"].match(%r{^refs/pull/(\d+)/(merge|head)$})
+      match[1].to_i if match
+    end
+
+    def self.detect_from_event_payload
+      return unless ENV["GITHUB_EVENT_PATH"] && File.exist?(ENV.fetch("GITHUB_EVENT_PATH", nil))
+
+      event_data = JSON.parse(File.read(ENV.fetch("GITHUB_EVENT_PATH", nil)))
+      event_data.dig("pull_request", "number")&.to_i
+    rescue StandardError
+      nil
+    end
+
+    def self.detect_from_ref_name
+      return unless ENV["GITHUB_EVENT_NAME"] == "pull_request" && ENV["GITHUB_REF_NAME"]
+
+      match = ENV["GITHUB_REF_NAME"].match(%r{^(\d+)/merge$})
+      match[1].to_i if match
+    end
+  end
 end
 
 # CLI execution
 if $PROGRAM_NAME == __FILE__
   begin
     is_ci = ENV["CI"] == "true" || ENV["GITHUB_ACTIONS"] == "true"
-    required_vars = %w[LINTIC_GITHUB_TOKEN LINTIC_GITHUB_REPO LINTIC_GITHUB_PR_NUMBER]
+    required_vars = %w[LINTIC_GITHUB_TOKEN LINTIC_GITHUB_REPO]
     missing_vars = required_vars.select { |var| ENV[var].nil? || ENV[var].empty? }
 
     unless missing_vars.empty?
@@ -846,13 +886,8 @@ if $PROGRAM_NAME == __FILE__
     end
 
     lintic = Lintic.new
-    pr_number = ENV.fetch("LINTIC_GITHUB_PR_NUMBER").to_i
+    pr_number = Lintic::PRNumberDetector.detect
     repo = ENV.fetch("LINTIC_GITHUB_REPO")
-
-    if pr_number <= 0
-      puts "❌ LINTIC_GITHUB_PR_NUMBER must be a positive integer"
-      exit 1
-    end
 
     if is_ci
       Lintic::GitHubSummaryWriter.write("::group::🚀 Starting Lintic for PR ##{pr_number} in #{repo}")

@@ -51,7 +51,6 @@ runs:
       env:
         LINTIC_GITHUB_TOKEN: ${{ inputs.github-token }}
         LINTIC_GITHUB_REPO: ${{ github.repository }}
-        LINTIC_GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
         LINTIC_MODEL: ${{ inputs.ollama-model }}
         LINTIC_URI: ${{ inputs.ollama-uri }}
         LINTIC_OPENAI_API_KEY: ${{ inputs.openai-api-key }}

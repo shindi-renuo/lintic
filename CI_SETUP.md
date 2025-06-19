@@ -81,7 +81,6 @@ jobs:
                   env:
             LINTIC_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             LINTIC_GITHUB_REPO: ${{ github.repository }}
-            LINTIC_GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
             LINTIC_MODEL: qwen2.5-coder:1.5b
             LINTIC_URI: http://localhost:11434/v1/
             LINTIC_OPENAI_API_KEY: ollama
@@ -117,7 +116,6 @@ When running manually or in custom setups, these environment variables are used:
 |----------|-------------|----------|---------|
 | `LINTIC_GITHUB_TOKEN` | GitHub authentication token | ✅ | - |
 | `LINTIC_GITHUB_REPO` | Repository in format `owner/repo` | ✅ | - |
-| `LINTIC_GITHUB_PR_NUMBER` | Pull request number to process | ✅ | - |
 | `LINTIC_MODEL` | AI model to use | ❌ | `qwen2.5-coder:1.5b` |
 | `LINTIC_URI` | Server URL for AI model | ❌ | `http://localhost:11434/v1/` |
 | `LINTIC_OPENAI_API_KEY` | OpenAI API key | ❌ | `ollama` |

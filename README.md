@@ -111,7 +111,6 @@ jobs:
     cat > .env << EOF
     LINTIC_GITHUB_TOKEN="ghp_YOUR_TOKEN"
     LINTIC_GITHUB_REPO="owner/repository-name"
-    LINTIC_GITHUB_PR_NUMBER="123"
     LINTIC_MODEL="qwen2.5-coder:1.5b"
     LINTIC_URI="http://localhost:11434/v1/"
     LINTIC_OPENAI_API_KEY="ollama"
@@ -131,7 +130,6 @@ jobs:
 |----------|----------|---------|-------------|
 | `LINTIC_GITHUB_TOKEN` | ✅ | - | GitHub Personal Access Token with `repo` scope |
 | `LINTIC_GITHUB_REPO` | ✅ | - | Repository in format `owner/repo-name` |
-| `LINTIC_GITHUB_PR_NUMBER` | ✅ | - | Pull request number to process |
 | `LINTIC_MODEL` | ❌ | `codellama` | AI model to use for fixes |
 | `LINTIC_URI` | ❌ | `http://localhost:11434/v1/` | Server endpoint for AI model |
 | `LINTIC_OPENAI_API_KEY` | ❌ | `ollama` | API key (use 'ollama' for local Ollama) |
