@@ -208,6 +208,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
-  <strong>Built with ❤️ by the Lintic Team</strong><br>
+  <strong>Built with ❤️ by the Sami Hindi @ Renuo</strong><br>
   <em>Never worry about linting errors in CI again! 🚀</em>
 </div>
