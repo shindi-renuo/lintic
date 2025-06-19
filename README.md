@@ -1,18 +1,37 @@
 # Lintic
 
-<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 0 20px;">
-  <div style="flex: 1; max-width: 600px;">
-    <h3>🩺 A medic for linting errors</h3>
-    <p>Automatically detect and fix RuboCop linting violations in your pull requests using AI-powered corrections. Never worry about CI failures due to linting errors again!</p>
-    <p><em>✨ Smart • 🤖 AI-Powered • 🛡️ Safe • ⚡ Fast</em></p>
-  </div>
-  <div style="text-align: center;">
-    <img src="repo/logo.png" alt="Lintic Logo" width="180" height="180">
-    <br><br>
-    <a href="https://www.ruby-lang.org/"><img src="https://img.shields.io/badge/Ruby-3.0+-CC342D?style=flat&logo=ruby&logoColor=white" alt="Ruby"></a><br>
-    <a href="action.yml"><img src="https://img.shields.io/badge/GitHub_Action-Available-blue?style=flat&logo=github&logoColor=white" alt="GitHub Action"></a><br>
-    <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
-  </div>
+<div align="center">
+
+<img src="repo/logo.png" alt="Lintic Logo" width="120" height="120">
+
+# 🩺 Lintic
+
+**A medic for linting errors**
+
+<p align="center">
+  <strong>Automatically detect and fix RuboCop linting violations in your pull requests using AI-powered corrections.</strong><br>
+  <em>Never worry about CI failures due to linting errors again!</em>
+</p>
+
+<p align="center">
+  <img alt="Smart" src="https://img.shields.io/badge/✨-Smart-purple?style=flat&logoColor=white">
+  <img alt="AI-Powered" src="https://img.shields.io/badge/🤖-AI--Powered-blue?style=flat&logoColor=white">
+  <img alt="Safe" src="https://img.shields.io/badge/🛡️-Safe-green?style=flat&logoColor=white">
+  <img alt="Fast" src="https://img.shields.io/badge/⚡-Fast-yellow?style=flat&logoColor=white">
+</p>
+
+<p align="center">
+  <a href="https://www.ruby-lang.org/">
+    <img alt="Ruby 3.0+" src="https://img.shields.io/badge/Ruby-3.0+-CC342D?style=for-the-badge&logo=ruby&logoColor=white">
+  </a>
+  <a href="action.yml">
+    <img alt="GitHub Action" src="https://img.shields.io/badge/GitHub_Action-Available-2088FF?style=for-the-badge&logo=github-actions&logoColor=white">
+  </a>
+  <img alt="MIT License" src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge&logo=opensourceinitiative&logoColor=white">
+</p>
+
+---
+
 </div>
 
 ## Purpose
