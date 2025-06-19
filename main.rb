@@ -131,6 +131,8 @@ class Lintic
     end
 
     def process(pr_number, repo)
+      return 0 if lintic_created_pr?(pr_number, repo)
+
       pr_files = fetch_pr_files(pr_number, repo)
       ruby_files = filter_ruby_files(pr_files)
 
@@ -142,6 +144,28 @@ class Lintic
     end
 
     private
+
+    def lintic_created_pr?(pr_number, repo)
+      pr = @github_client.pull_request(repo, pr_number)
+
+      lintic_title = pr.title.include?("[LINTIC]")
+
+      lintic_branch = pr.head.ref.start_with?(Config::BRANCH_PREFIX)
+
+      lintic_body = pr.body&.include?("Generated automatically by [Lintic]")
+
+      is_lintic_pr = lintic_title || lintic_branch || lintic_body
+
+      if is_lintic_pr
+        @logger.info("Skipping Lintic-created PR ##{pr_number} to prevent recursion")
+        return true
+      end
+
+      false
+    rescue Octokit::Error => e
+      @logger.warn("Could not check if PR ##{pr_number} was created by Lintic: #{e.message}")
+      false
+    end
 
     def fetch_pr_files(pr_number, repo)
       @github_client.pull_request_files(repo, pr_number)
