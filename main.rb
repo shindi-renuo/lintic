@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require 'dotenv'
-require 'octokit'
-require 'ruby/openai'
-require 'json'
-require 'tempfile'
-require 'stringio'
-require 'base64'
-require 'logger'
-require 'rubocop'
+require "dotenv"
+require "octokit"
+require "ruby/openai"
+require "json"
+require "tempfile"
+require "stringio"
+require "base64"
+require "logger"
+require "rubocop"
 
 Dotenv.load
 
@@ -21,16 +21,16 @@ class Lintic
 
   # Configuration and constants
   module Config
-    DEFAULT_MODEL = 'qwen2.5-coder:1.5b'
-    DEFAULT_OLLAMA_URI = 'http://localhost:11434/v1/'
-    DEFAULT_AI_TOKEN = 'ollama'
+    DEFAULT_MODEL = "qwen2.5-coder:1.5b"
+    DEFAULT_OLLAMA_URI = "http://localhost:11434/v1/"
+    DEFAULT_AI_TOKEN = "ollama"
     REQUEST_TIMEOUT = 120
     AI_TEMPERATURE = 0.1
     MAX_SUMMARY_TOKENS = 1000
     MAX_FIX_TOKENS = 4000
-    BRANCH_PREFIX = 'lintic/fix-pr'
-    COMMIT_MESSAGE = '🤖 Fix linting errors with Lintic'
-    TEMPFILE_PREFIX = 'lintic_check'
+    BRANCH_PREFIX = "lintic/fix-pr"
+    COMMIT_MESSAGE = "🤖 Fix linting errors with Lintic"
+    TEMPFILE_PREFIX = "lintic_check"
     RUBY_FILE_EXTENSIONS = %w[.rb .rake .gemspec].freeze
     RUBY_SHEBANG_PATTERN = /\A#!.*ruby/
   end
@@ -39,7 +39,7 @@ class Lintic
     @logger = LoggerSetup.create
     @github_client = GitHubClientSetup.create(@logger)
     @ai_client = AIClientSetup.create(@logger)
-    @logger.info('Lintic initialized successfully')
+    @logger.info("Lintic initialized successfully")
   end
 
   def process_pr(pr_number, repo)
@@ -65,14 +65,14 @@ class Lintic
     def self.validate_pr_number(pr_number)
       return if pr_number.is_a?(Integer) && pr_number.positive?
 
-      raise LinticError, 'PR number must be a positive integer'
+      raise LinticError, "PR number must be a positive integer"
     end
 
     def self.validate_repo(repo)
       if repo.nil? || repo.strip.empty?
-        raise LinticError, 'Repository must be a non-empty string'
+        raise LinticError, "Repository must be a non-empty string"
       elsif !repo.match?(%r{\A[\w.-]+/[\w.-]+\z})
-        raise LinticError, 'Repository must be in owner/repo format'
+        raise LinticError, "Repository must be in owner/repo format"
       end
     end
   end
@@ -92,13 +92,13 @@ class Lintic
   # Helper class for GitHub client setup
   class GitHubClientSetup
     def self.create(logger)
-      token = ENV['LINTIC_GITHUB_TOKEN']
-      raise LinticError, 'LINTIC_GITHUB_TOKEN environment variable is required' unless token
+      token = ENV.fetch("LINTIC_GITHUB_TOKEN", nil)
+      raise LinticError, "LINTIC_GITHUB_TOKEN environment variable is required" unless token
 
       Octokit::Client.new(access_token: token).tap do |_client|
         # Test the connection
         client.user
-        logger.info('GitHub client configured successfully')
+        logger.info("GitHub client configured successfully")
       end
     rescue Octokit::Error => e
       raise GitHubError, "GitHub authentication failed: #{e.message}"
@@ -108,12 +108,12 @@ class Lintic
   # Helper class for AI client setup
   class AIClientSetup
     def self.create(logger)
-      model = ENV.fetch('LINTIC_MODEL', Config::DEFAULT_MODEL)
+      model = ENV.fetch("LINTIC_MODEL", Config::DEFAULT_MODEL)
 
       OpenAI::Client.new(
-        uri_base: ENV.fetch('LINTIC_URI', Config::DEFAULT_OLLAMA_URI),
+        uri_base: ENV.fetch("LINTIC_URI", Config::DEFAULT_OLLAMA_URI),
         request_timeout: Config::REQUEST_TIMEOUT,
-        access_token: ENV.fetch('LINTIC_OPENAI_API_KEY', Config::DEFAULT_AI_TOKEN)
+        access_token: ENV.fetch("LINTIC_OPENAI_API_KEY", Config::DEFAULT_AI_TOKEN)
       ).tap do |_client|
         logger.info("AI client configured for model: #{model}")
       end
@@ -134,7 +134,7 @@ class Lintic
       pr_files = fetch_pr_files(pr_number, repo)
       ruby_files = filter_ruby_files(pr_files)
 
-      return 0 if handle_no_ruby_files(ruby_files)
+      return 0 if no_ruby_files?(ruby_files)
 
       fixes_applied, _summaries = process_ruby_files(ruby_files, repo, pr_number)
       log_results(fixes_applied)
@@ -157,10 +157,10 @@ class Lintic
       ruby_files
     end
 
-    def handle_no_ruby_files(ruby_files)
+    def no_ruby_files?(ruby_files)
       return false unless ruby_files.empty?
 
-      @logger.info('No Ruby files found in this PR')
+      @logger.info("No Ruby files found in this PR")
       true
     end
 
@@ -173,7 +173,7 @@ class Lintic
       if fixes_applied.positive?
         @logger.info("Successfully processed #{fixes_applied} files with linting fixes")
       else
-        @logger.info('No linting errors found or no fixes could be applied')
+        @logger.info("No linting errors found or no fixes could be applied")
       end
     end
   end
@@ -181,7 +181,7 @@ class Lintic
   # Ruby file detection logic
   class RubyFileDetector
     def self.ruby_file?(file)
-      return false if file.status == 'removed'
+      return false if file.status == "removed"
       return true if ruby_extension?(file.filename)
       return false unless File.extname(file.filename).empty?
 
@@ -206,7 +206,7 @@ class Lintic
 
     def process_files(files, repo, pr_number)
       fixes_applied = 0
-      timestamp = Time.now.strftime('%Y%m%d%H%M%S')
+      timestamp = Time.now.strftime("%Y%m%d%H%M%S")
       summaries = []
       head_sha = fetch_head_sha(repo, pr_number)
 
@@ -242,7 +242,7 @@ class Lintic
     end
 
     def apply_file_fixes(file, content, linting_results, context)
-      file_diff = file.patch || ''
+      file_diff = file.patch || ""
       result = AIFixer.fix_errors(@ai_client, content, linting_results, file_diff, @logger)
 
       return apply_successful_fix(file, result, context) if content_changed?(content, result[:fixed_content])
@@ -252,8 +252,26 @@ class Lintic
     end
 
     def apply_successful_fix(file, result, context)
-      FixApplier.apply(@github_client, context.repo, file.filename, result[:fixed_content],
-                       context.pr_number, context.timestamp, context.summaries, @logger)
+      options = build_fix_options(file, result, context)
+      FixApplier.apply(options)
+
+      update_summaries_and_log(file, result, context)
+    end
+
+    def build_fix_options(file, result, context)
+      {
+        github_client: @github_client,
+        repo: context.repo,
+        file_path: file.filename,
+        fixed_content: result[:fixed_content],
+        pr_number: context.pr_number,
+        timestamp: context.timestamp,
+        summaries: context.summaries,
+        logger: @logger
+      }
+    end
+
+    def update_summaries_and_log(file, result, context)
       context.summaries << { file: file.filename, summary: result[:summary] } if result[:summary]
       @logger.info("Applied fixes to #{file.filename}")
       1
@@ -286,7 +304,7 @@ class Lintic
 
       if binary_file?(decoded_content)
         logger.warn("Skipping binary file: #{file.filename}")
-        return ''
+        return ""
       end
 
       decoded_content
@@ -302,13 +320,13 @@ class Lintic
   # Runs RuboCop linting checks
   class LintingService
     def self.run_check(file_content, logger)
-      Tempfile.create([Config::TEMPFILE_PREFIX, '.rb']) do |tempfile|
+      Tempfile.create([Config::TEMPFILE_PREFIX, ".rb"]) do |tempfile|
         setup_tempfile(tempfile, file_content)
         run_rubocop(tempfile.path)
       end
     rescue JSON::ParserError => e
       logger.error("Failed to parse RuboCop output: #{e.message}")
-      raise LintingError, 'RuboCop output parsing failed'
+      raise LintingError, "RuboCop output parsing failed"
     rescue StandardError => e
       logger.error("RuboCop execution failed: #{e.message}")
       raise LintingError, "Linting check failed: #{e.message}"
@@ -331,8 +349,8 @@ class Lintic
 
     def self.create_rubocop_options(tempfile_path)
       RuboCop::Options.new.parse([
-                                   '--format', 'json',
-                                   '--force-exclusion',
+                                   "--format", "json",
+                                   "--force-exclusion",
                                    tempfile_path
                                  ])[0]
     end
@@ -369,16 +387,16 @@ class Lintic
     def self.parse_output(output)
       return JSON.parse(output) if output && !output.strip.empty?
 
-      { 'files' => [{ 'offenses' => [] }] }
+      { "files" => [{ "offenses" => [] }] }
     end
   end
 
   # Extracts offenses from linting results
   class OffenseExtractor
     def self.extract(linting_results)
-      return [] unless linting_results.is_a?(Hash) && linting_results['files']
+      return [] unless linting_results.is_a?(Hash) && linting_results["files"]
 
-      linting_results['files'].flat_map { |file| file['offenses'] || [] }
+      linting_results["files"].flat_map { |file| file["offenses"] || [] }
     end
 
     def self.offenses?(linting_results)
@@ -406,8 +424,8 @@ class Lintic
     def self.make_ai_request(ai_client, prompt)
       ai_client.chat(
         parameters: {
-          model: ENV.fetch('LINTIC_MODEL', Config::DEFAULT_MODEL),
-          messages: [{ role: 'user', content: prompt }],
+          model: ENV.fetch("LINTIC_MODEL", Config::DEFAULT_MODEL),
+          messages: [{ role: "user", content: prompt }],
           temperature: Config::AI_TEMPERATURE,
           max_tokens: Config::MAX_FIX_TOKENS
         }
@@ -426,11 +444,10 @@ class Lintic
 
     def self.prompt_template(file_content, offense_summary, diff_context, file_diff)
       instructions = build_instructions(file_diff)
+      preamble = build_preamble(file_diff)
 
       <<~PROMPT
-        You are an expert Ruby developer and code reviewer. Please fix the following Ruby code to resolve all RuboCop linting errors.
-
-        This code is from a Pull Request. Focus ONLY on fixing linting errors#{file_diff ? ' in the changed lines shown in the diff below' : ''}.
+        #{preamble}
 
         #{instructions}
 
@@ -446,34 +463,46 @@ class Lintic
       PROMPT
     end
 
-    def self.build_instructions(file_diff)
-      base_instructions = [
-        '1. Return ONLY the corrected Ruby code (the complete fixed file content)',
-        '2. Maintain the original functionality and logic exactly',
-        '3. Fix ONLY the linting errors specified below',
-        '4. Do not modify code that wasn\'t changed in the PR unless it\'s necessary to fix linting errors',
-        '5. Do not add any explanations, comments, or markdown formatting',
-        '6. Preserve the original code structure and indentation style',
-        '7. Ensure the output is valid Ruby code that runs without syntax errors'
-      ]
+    def self.build_preamble(file_diff)
+      pr_focus = file_diff ? " in the changed lines shown in the diff below" : ""
+      main_text = "You are an expert Ruby developer and code reviewer. " \
+                  "Please fix the following Ruby code to resolve all RuboCop linting errors."
 
-      if file_diff
-        base_instructions << '8. Focus primarily on the lines marked with + in the diff - ' \
-                             'these are the new/changed lines'
-      end
+      "#{main_text}\n\nThis code is from a Pull Request. Focus ONLY on fixing linting errors#{pr_focus}."
+    end
+
+    def self.build_instructions(file_diff)
+      base_instructions = base_instruction_list
+      base_instructions += diff_specific_instructions if file_diff
 
       "IMPORTANT INSTRUCTIONS:\n#{base_instructions.join("\n")}"
     end
 
+    def self.base_instruction_list
+      [
+        "1. Return ONLY the corrected Ruby code (the complete fixed file content)",
+        "2. Maintain the original functionality and logic exactly",
+        "3. Fix ONLY the linting errors specified below",
+        "4. Do not modify code that wasn't changed in the PR unless it's necessary to fix linting errors",
+        "5. Do not add any explanations, comments, or markdown formatting",
+        "6. Preserve the original code structure and indentation style",
+        "7. Ensure the output is valid Ruby code that runs without syntax errors"
+      ]
+    end
+
+    def self.diff_specific_instructions
+      ["8. Focus primarily on the lines marked with + in the diff - these are the new/changed lines"]
+    end
+
     def self.format_offenses(offenses)
       offenses.map do |offense|
-        line_num = offense.dig('location', 'line') || 'unknown'
+        line_num = offense.dig("location", "line") || "unknown"
         "- Line #{line_num}: #{offense['message']} (#{offense['cop_name']})"
       end.join("\n")
     end
 
     def self.format_diff_context(file_diff)
-      return '' if !file_diff || file_diff.strip.empty?
+      return "" if !file_diff || file_diff.strip.empty?
 
       "\n\nPR DIFF (focus on these changes):\n```diff\n#{file_diff}\n```"
     end
@@ -482,8 +511,8 @@ class Lintic
   # Parses AI responses to extract code
   class ResponseParser
     def self.extract_code(response, logger)
-      content = response.dig('choices', 0, 'message', 'content')
-      raise AIError, 'No content received from AI model' unless content
+      content = response.dig("choices", 0, "message", "content")
+      raise AIError, "No content received from AI model" unless content
 
       content = content.strip
       extract_from_markdown(content) || extract_ruby_code(content, logger) || content
@@ -500,39 +529,39 @@ class Lintic
 
     def self.extract_ruby_code(content, logger)
       if ruby_code?(content)
-        logger.warn('AI response did not contain a code block, but appears to be Ruby code')
+        logger.warn("AI response did not contain a code block, but appears to be Ruby code")
         return content
       end
 
-      logger.warn('AI response format unexpected, using full response')
+      logger.warn("AI response format unexpected, using full response")
       content
     end
 
     def self.ruby_code?(content)
-      content.include?('def ') || content.include?('class ') ||
-        content.include?('module ') || content.start_with?('#')
+      content.include?("def ") || content.include?("class ") ||
+        content.include?("module ") || content.start_with?("#")
     end
   end
 
   # Generates change summaries
   class SummaryGenerator
     def self.generate(ai_client, file_content, fixed_content, offenses, logger)
-      return early_return_message(file_content, fixed_content) if should_return_early?(file_content, fixed_content)
+      return early_return_message if should_return_early?(file_content, fixed_content)
 
       prompt = build_summary_prompt(file_content, fixed_content, offenses)
       response = make_summary_request(ai_client, prompt)
       extract_summary_content(response)
     rescue StandardError => e
       logger.error("Failed to generate change summary: #{e.message}")
-      'No summary available due to an error'
+      "No summary available due to an error"
     end
 
     def self.should_return_early?(file_content, fixed_content)
       file_content.strip.empty? || fixed_content.strip.empty?
     end
 
-    def self.early_return_message(*)
-      'No summary available - no content provided'
+    def self.early_return_message
+      "No summary available - no content provided"
     end
 
     def self.build_summary_prompt(file_content, fixed_content, offenses)
@@ -545,21 +574,15 @@ class Lintic
 
     def self.summary_prompt_template(truncated_original, truncated_fixed, formatted_offenses)
       instructions = summary_instructions
+      preamble = build_summary_preamble
+      code_sections = build_code_sections(truncated_original, truncated_fixed)
 
       <<~PROMPT
-        You are a code reviewer. Please provide a concise, markdown-formatted summary of the changes made to fix the following linting errors.
+        #{preamble}
 
         #{instructions}
 
-        ORIGINAL CODE:
-        ```ruby
-        #{truncated_original}
-        ```
-
-        FIXED CODE:
-        ```ruby
-        #{truncated_fixed}
-        ```
+        #{code_sections}
 
         LINTING ERRORS FIXED:
         #{formatted_offenses}
@@ -568,16 +591,29 @@ class Lintic
       PROMPT
     end
 
+    def self.build_summary_preamble
+      <<~PREAMBLE
+        You are a code reviewer. Please provide a concise, markdown-formatted summary of the changes made to fix the following linting errors.
+      PREAMBLE
+    end
+
+    def self.build_code_sections(truncated_original, truncated_fixed)
+      original_section = "ORIGINAL CODE:\n```ruby\n#{truncated_original}\n```"
+      fixed_section = "FIXED CODE:\n```ruby\n#{truncated_fixed}\n```"
+
+      "#{original_section}\n\n#{fixed_section}"
+    end
+
     def self.summary_instructions
       [
-        '1. Focus on explaining WHAT was changed and WHY',
-        '2. Use bullet points for each significant change',
-        '3. Keep it brief but informative (max 200 words)',
-        '4. Use technical but clear language',
-        '5. Format in markdown',
-        '6. Include the cop names in technical terms',
-        '7. Group similar changes together',
-        '8. Only mention actual changes made'
+        "1. Focus on explaining WHAT was changed and WHY",
+        "2. Use bullet points for each significant change",
+        "3. Keep it brief but informative (max 200 words)",
+        "4. Use technical but clear language",
+        "5. Format in markdown",
+        "6. Include the cop names in technical terms",
+        "7. Group similar changes together",
+        "8. Only mention actual changes made"
       ].join("\n")
     end
 
@@ -589,7 +625,7 @@ class Lintic
 
     def self.format_offenses_for_summary(offenses)
       offenses.map do |offense|
-        line_num = offense.dig('location', 'line') || 'unknown'
+        line_num = offense.dig("location", "line") || "unknown"
         "- Line #{line_num}: #{offense['message']} (#{offense['cop_name']})"
       end.join("\n")
     end
@@ -597,8 +633,8 @@ class Lintic
     def self.make_summary_request(ai_client, prompt)
       ai_client.chat(
         parameters: {
-          model: ENV.fetch('LINTIC_MODEL', Config::DEFAULT_MODEL),
-          messages: [{ role: 'user', content: prompt }],
+          model: ENV.fetch("LINTIC_MODEL", Config::DEFAULT_MODEL),
+          messages: [{ role: "user", content: prompt }],
           temperature: Config::AI_TEMPERATURE,
           max_tokens: Config::MAX_SUMMARY_TOKENS
         }
@@ -606,8 +642,8 @@ class Lintic
     end
 
     def self.extract_summary_content(response)
-      content = response.dig('choices', 0, 'message', 'content')
-      content&.strip || 'No summary available'
+      content = response.dig("choices", 0, "message", "content")
+      content&.strip || "No summary available"
     end
   end
 
@@ -616,14 +652,45 @@ class Lintic
     FixContext = Struct.new(:github_client, :repo, :file_path, :fixed_content, :pr_number, :timestamp, :summaries,
                             :logger)
 
-    def self.apply(github_client, repo, file_path, fixed_content, pr_number, timestamp, summaries, logger)
-      context = FixContext.new(github_client, repo, file_path, fixed_content, pr_number, timestamp, summaries, logger)
+    def self.apply(options)
+      context = FixContext.new(
+        options[:github_client], options[:repo], options[:file_path], options[:fixed_content],
+        options[:pr_number], options[:timestamp], options[:summaries], options[:logger]
+      )
 
-      branch_name = BranchCreator.create(context.github_client, context.repo, context.pr_number, context.timestamp,
-                                         context.logger)
-      FileUpdater.update(context.github_client, context.repo, branch_name, context.file_path, context.fixed_content)
-      PRCreator.create(context.github_client, context.repo, branch_name, context.pr_number, context.summaries,
-                       context.logger)
+      execute_fix_workflow(context)
+    end
+
+    def self.execute_fix_workflow(context)
+      branch_name = create_branch(context)
+      update_file_content(context, branch_name)
+      create_pull_request(context, branch_name)
+    end
+
+    def self.create_branch(context)
+      BranchCreator.create(context.github_client, context.repo, context.pr_number, context.timestamp, context.logger)
+    end
+
+    def self.update_file_content(context, branch_name)
+      FileUpdater.update(
+        github_client: context.github_client,
+        repo: context.repo,
+        branch_name: branch_name,
+        file_path: context.file_path,
+        fixed_content: context.fixed_content
+      )
+    end
+
+    def self.create_pull_request(context, branch_name)
+      pr_options = {
+        github_client: context.github_client,
+        repo: context.repo,
+        branch_name: branch_name,
+        original_pr_number: context.pr_number,
+        summaries: context.summaries,
+        logger: context.logger
+      }
+      PRCreator.create(pr_options)
     end
   end
 
@@ -631,21 +698,30 @@ class Lintic
   class BranchCreator
     def self.create(github_client, repo, pr_number, timestamp, logger)
       original_pr = github_client.pull_request(repo, pr_number)
+      branch_name = generate_branch_name(pr_number, timestamp)
+
+      create_branch_ref(github_client, repo, branch_name, original_pr, logger)
+    rescue Octokit::Error => e
+      raise GitHubError, "Failed to create branch: #{e.message}"
+    end
+
+    def self.generate_branch_name(pr_number, timestamp)
+      "#{Config::BRANCH_PREFIX}-#{pr_number}-#{timestamp}"
+    end
+
+    def self.create_branch_ref(github_client, repo, branch_name, original_pr, logger)
       base_branch = original_pr.head.ref
       base_sha = original_pr.head.sha
-      branch_name = "#{Config::BRANCH_PREFIX}-#{pr_number}-#{timestamp}"
 
       github_client.create_ref(repo, "refs/heads/#{branch_name}", base_sha)
       logger.info("Created branch: #{branch_name} from #{base_branch}")
       branch_name
-    rescue Octokit::Error => e
-      raise GitHubError, "Failed to create branch: #{e.message}"
     end
   end
 
   # Updates file content
   class FileUpdater
-    def self.update(github_client, repo, branch_name, file_path, fixed_content)
+    def self.update(github_client:, repo:, branch_name:, file_path:, fixed_content:)
       current_file = github_client.contents(repo, path: file_path, ref: branch_name)
 
       github_client.update_contents(
@@ -665,23 +741,42 @@ class Lintic
   class PRCreator
     PRContext = Struct.new(:github_client, :repo, :branch_name, :original_pr_number, :summaries, :logger)
 
-    def self.create(github_client, repo, branch_name, original_pr_number, summaries, logger)
-      context = PRContext.new(github_client, repo, branch_name, original_pr_number, summaries, logger)
+    def self.create(options)
+      context = PRContext.new(
+        options[:github_client], options[:repo], options[:branch_name],
+        options[:original_pr_number], options[:summaries], options[:logger]
+      )
 
       create_pull_request(context)
     end
 
     def self.create_pull_request(context)
-      original_pr = context.github_client.pull_request(context.repo, context.original_pr_number)
-      base_branch = original_pr.head.ref
-      title = "[LINTIC] 🧹 Fix linting errors (PR ##{context.original_pr_number})"
-      body = PRBodyBuilder.build(context.original_pr_number, context.summaries)
+      original_pr = fetch_original_pr(context)
+      pr_details = build_pr_details(context, original_pr)
 
-      pr = context.github_client.create_pull_request(context.repo, base_branch, context.branch_name, title, body)
-      context.logger.info("Created fix PR: #{pr.html_url}")
-      pr
+      create_and_log_pr(context, pr_details)
     rescue Octokit::Error => e
       raise GitHubError, "Failed to create pull request: #{e.message}"
+    end
+
+    def self.fetch_original_pr(context)
+      context.github_client.pull_request(context.repo, context.original_pr_number)
+    end
+
+    def self.build_pr_details(context, original_pr)
+      {
+        base_branch: original_pr.head.ref,
+        title: "[LINTIC] 🧹 Fix linting errors (PR ##{context.original_pr_number})",
+        body: PRBodyBuilder.build(context.original_pr_number, context.summaries)
+      }
+    end
+
+    def self.create_and_log_pr(context, pr_details)
+      pr = context.github_client.create_pull_request(
+        context.repo, pr_details[:base_branch], context.branch_name, pr_details[:title], pr_details[:body]
+      )
+      context.logger.info("Created fix PR: #{pr.html_url}")
+      pr
     end
   end
 
@@ -689,23 +784,27 @@ class Lintic
   class PRBodyBuilder
     def self.build(original_pr_number, summaries)
       changes_summary = build_changes_summary(summaries)
+      header = build_header(original_pr_number)
+      usage_instructions = build_usage_instructions
+      footer = build_footer
 
-      <<~BODY
-        ## 🤖 Automated Linting Fixes
+      "#{header}\n\n### What was fixed:\n#{changes_summary}\n\n#{usage_instructions}\n\n#{footer}"
+    end
 
-        This PR was automatically created by **Lintic** to fix linting errors found in PR ##{original_pr_number}.
+    def self.build_header(original_pr_number)
+      "## 🤖 Automated Linting Fixes\n\n" \
+        "This PR was automatically created by **Lintic** to fix linting errors found in PR ##{original_pr_number}."
+    end
 
-        ### What was fixed:
-        #{changes_summary}
+    def self.build_usage_instructions
+      "### How to use:\n" \
+        "1. Review the changes in this PR\n" \
+        "2. If satisfied, merge this PR into your feature branch\n" \
+        "3. Your original PR will then have clean, linted code"
+    end
 
-        ### How to use:
-        1. Review the changes in this PR
-        2. If satisfied, merge this PR into your feature branch
-        3. Your original PR will then have clean, linted code
-
-        ---
-        *Generated automatically by [Lintic](https://github.com/shindi-renuo/lintic) 🚀*
-      BODY
+    def self.build_footer
+      "---\n*Generated automatically by [Lintic](https://github.com/shindi-renuo/lintic) 🚀*"
     end
 
     def self.build_changes_summary(summaries)
@@ -724,9 +823,9 @@ class Lintic
   # GitHub summary writer
   class GitHubSummaryWriter
     def self.write(message)
-      return unless ENV['GITHUB_STEP_SUMMARY']
+      return unless ENV["GITHUB_STEP_SUMMARY"]
 
-      File.open(ENV['GITHUB_STEP_SUMMARY'], 'a') { |f| f.puts message }
+      File.open(ENV.fetch("GITHUB_STEP_SUMMARY", nil), "a") { |f| f.puts message }
     rescue StandardError => e
       warn("Failed to write to GitHub step summary: #{e.message}")
     end
@@ -736,22 +835,22 @@ end
 # CLI execution
 if $PROGRAM_NAME == __FILE__
   begin
-    is_ci = ENV['CI'] == 'true' || ENV['GITHUB_ACTIONS'] == 'true'
+    is_ci = ENV["CI"] == "true" || ENV["GITHUB_ACTIONS"] == "true"
     required_vars = %w[LINTIC_GITHUB_TOKEN LINTIC_GITHUB_REPO LINTIC_GITHUB_PR_NUMBER]
     missing_vars = required_vars.select { |var| ENV[var].nil? || ENV[var].empty? }
 
     unless missing_vars.empty?
       puts "❌ Missing required environment variables: #{missing_vars.join(', ')}"
-      puts 'Please check your .env file or environment configuration.'
+      puts "Please check your .env file or environment configuration."
       exit 1
     end
 
     lintic = Lintic.new
-    pr_number = ENV.fetch('LINTIC_GITHUB_PR_NUMBER').to_i
-    repo = ENV.fetch('LINTIC_GITHUB_REPO')
+    pr_number = ENV.fetch("LINTIC_GITHUB_PR_NUMBER").to_i
+    repo = ENV.fetch("LINTIC_GITHUB_REPO")
 
     if pr_number <= 0
-      puts '❌ LINTIC_GITHUB_PR_NUMBER must be a positive integer'
+      puts "❌ LINTIC_GITHUB_PR_NUMBER must be a positive integer"
       exit 1
     end
 
@@ -764,18 +863,18 @@ if $PROGRAM_NAME == __FILE__
     result = lintic.process_pr(pr_number, repo)
 
     if is_ci
-      Lintic::GitHubSummaryWriter.write('::endgroup::')
+      Lintic::GitHubSummaryWriter.write("::endgroup::")
 
       if result&.positive?
         Lintic::GitHubSummaryWriter.write(
           "::notice title=Lintic Success::Successfully processed #{result} files with linting fixes"
         )
       else
-        Lintic::GitHubSummaryWriter.write('::notice title=Lintic Complete::No linting errors found or fixes needed')
+        Lintic::GitHubSummaryWriter.write("::notice title=Lintic Complete::No linting errors found or fixes needed")
       end
     end
 
-    puts '✅ Lintic completed successfully!'
+    puts "✅ Lintic completed successfully!"
   rescue Lintic::LinticError => e
     if is_ci
       Lintic::GitHubSummaryWriter.write("::error title=Lintic Error::#{e.message}")
@@ -788,7 +887,7 @@ if $PROGRAM_NAME == __FILE__
       Lintic::GitHubSummaryWriter.write("::error title=Unexpected Error::#{e.message}")
     else
       puts "❌ Unexpected Error: #{e.message}"
-      puts 'Please check your configuration and try again.'
+      puts "Please check your configuration and try again."
     end
     exit 1
   end
